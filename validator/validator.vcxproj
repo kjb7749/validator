@@ -158,7 +158,10 @@
     <ClCompile Include="validator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="test.txt" />
+    <Text Include="testHeader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="testHeader2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
