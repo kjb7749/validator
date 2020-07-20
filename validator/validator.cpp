@@ -3,8 +3,13 @@
 #include <re2/re2.h>
 #include <Windows.h>
 #include <vector>
+#include <map>
+#include <functional>
 
 using namespace std;
+
+HWND hConsole = GetConsoleWindow();
+
 
 DWORD convert_ansi_to_unicode_string(
     __out std::wstring& unicode,
@@ -249,51 +254,85 @@ auto trimString = [](wstring text, wstring base, wstring target) -> wstring
     return text;
 };
 
-
 auto normalizer = [](wstring text) -> vector<wstring>
 {
     text = trimString(text, TEXT("\t"), TEXT(""));
     text = trimString(text, TEXT("\n"), TEXT(""));
-    //text = trimString(text, TEXT("/"), TEXT(""));
     text = trimString(text, TEXT(" "), TEXT(""));
     vector<wstring> strings = splitString(text, TEXT(","));
-    std::sort(strings.begin(), strings.end());
+    //std::sort(strings.begin(), strings.end());
     return strings;
 };
 
-int main()
+auto setDebugMode = [](bool value = false)
+{
+    if (value)
+    {
+        ShowWindow(hConsole, SW_NORMAL);
+    }
+    else
+    {
+        ShowWindow(hConsole, SW_HIDE);
+    }
+};
+
+
+map<string, function<void(bool)>> optionList;
+
+
+int main(int argc, char* argv[])
 {   
-    string utf8Text;
+    vector<string> commandList;
+    for (int i = 0; i < argc; ++i)
+    {
+        commandList.push_back(argv[i]);
+    }
+
+    optionList.insert(make_pair("-d", setDebugMode));
+
+    auto findOptions = [&]()
+    {
+        for (auto itr : commandList)
+        {
+            if (RE2::FullMatch(itr, "-{1,2}\\w+"))
+            {
+                cout << itr << endl;
+                optionList.at(itr)(true);
+            }
+        }
+    };
+
+    findOptions();
+
+
+    string utf8BaseText;
+    string utf8TargetText;
     wstring unicodeBaseText;
     wstring unicodeTargetText;
     string pattern;
 
 
-    utf8Text = fileReader("testHeader.h");          //utf8 형태로 인코딩 된 파일에서 데이터를 읽는다
-    RE2::Replace(&utf8Text, "//.*", "");
+    utf8BaseText = fileReader(commandList.at(1));          //utf8 형태로 인코딩 된 파일에서 데이터를 읽는다
+    utf8TargetText = fileReader(commandList.at(2));
 
-    convert_utf8_to_unicode_string(unicodeBaseText, utf8Text.c_str(), strlen(utf8Text.c_str()));        //unicode 문자열로 변환한다.
+    RE2::GlobalReplace(&utf8BaseText, "//.*", "");
+    RE2::GlobalReplace(&utf8TargetText, "//.*", "");
 
-    utf8Text.clear();
-    utf8Text = fileReader("testHeader2.h");
-    RE2::Replace(&utf8Text, "//", "");
-
-    convert_utf8_to_unicode_string(unicodeTargetText, utf8Text.c_str(), strlen(utf8Text.c_str()));        //unicode 문자열로 변환한다.
+    convert_utf8_to_unicode_string(unicodeBaseText, utf8BaseText.c_str(), strlen(utf8BaseText.c_str()));        //unicode 문자열로 변환한다.   
+    convert_utf8_to_unicode_string(unicodeTargetText, utf8TargetText.c_str(), strlen(utf8TargetText.c_str()));        //unicode 문자열로 변환한다.
 
     auto baseStrs = normalizer(unicodeBaseText);
     auto targetStrs = normalizer(unicodeTargetText);
 
+    //for (auto itr : baseStrs)
+    //{
+    //    string token;
+    //    convert_unicode_to_ansi_string(token, itr.c_str(), lstrlen(itr.c_str()));
+    //    cout << token << endl;
+    //}
 
 
-    for (auto itr : baseStrs)
-    {
-        string token;
-        convert_unicode_to_ansi_string(token, itr.c_str(), lstrlen(itr.c_str()));
-        cout << token << endl;
-    }
-
-
-    if (baseStrs.size() != targetStrs.size())
+   if (baseStrs.size() != targetStrs.size())
     {
         MessageBox(0, TEXT("개수가 일치하지 않습니다."), TEXT("개수 불일치"), 0);
     }
@@ -302,9 +341,17 @@ int main()
 
     for(size_t index = 0; index < size; ++index)
     {
-        if (baseStrs.at(index) != targetStrs.at(index))
+        wstring left = baseStrs.at(index);
+        wstring right = targetStrs.at(index);
+        if (left != right)
         {
-            MessageBox(0, TEXT("데이터가 밀렸습니다. 확인 부탁드려요!"), TEXT("데이터 밀림"), 0);
+            wstring msg = TEXT("데이터가 일치하지 않습니다. 확인하세요.\n");
+            msg.append(left);
+            msg.append(TEXT(" != "));
+            msg.append(right);
+            
+            auto text = msg.c_str();
+            MessageBox(hConsole, text, TEXT("데이터 밀림"), 0);
         }
     }
 

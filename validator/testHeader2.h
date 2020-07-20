@@ -1,10 +1,12 @@
+ï»¿esegse,
 a = 0,
 b_123,
-c,		//ÄÚ¸àÆ®
+
+c,		//ì¸ì½”ë”©
 d,
 e,		//comment
 k,
 aa,
 et,		//ekgjiose_eijgsie
-ii,		//< ÈÄÈÄÈÄ ÇìÇì
+ii,		//ë¬¸ì œì˜€ë‚˜ ì  ì¥
 eigjiseg
